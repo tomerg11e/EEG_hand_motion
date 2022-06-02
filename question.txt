@@ -2,3 +2,4 @@ are those the 35 leads?
 https://www.researchgate.net/figure/EEG-electrode-grid-configuration-used-in-our-experiments-The-35-channels-of-the-EEG_fig1_51034147
 
 the labels, I have 0,1,2- what is each label? (don't I need to have 4 labels?)
+is it no movement, left hand open, left hand open?
