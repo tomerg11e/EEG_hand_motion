@@ -6,7 +6,7 @@ import torch.nn as nn
 import tqdm.auto
 from typing import Any, Callable, Optional, Iterator
 from torch.utils.data import DataLoader
-from typing_classes import FitResult, BatchResult, EpochResult
+from util_def import FitResult, BatchResult, EpochResult
 
 
 class Trainer(abc.ABC):
@@ -70,9 +70,7 @@ class Trainer(abc.ABC):
         for epoch in range(num_epochs):
             verbose = False  # pass this to train/test_epoch.
 
-            if print_every > 0 and (
-                    epoch % print_every == 0 or epoch == num_epochs - 1
-            ):
+            if print_every > 0 and (epoch % print_every == 0 or epoch == num_epochs - 1):
                 verbose = True
             self._print(f"--- EPOCH {epoch + 1}/{num_epochs} ---", verbose)
 
@@ -95,7 +93,7 @@ class Trainer(abc.ABC):
                     break
 
             if post_epoch_fn:
-                post_epoch_fn(epoch, train_result, test_result, verbose)
+                post_epoch_fn(epoch, train_result, test_result, verbose, **kw)
 
         return FitResult(actual_num_epochs, train_loss, train_acc, test_loss, test_acc)
 

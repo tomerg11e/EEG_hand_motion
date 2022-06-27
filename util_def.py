@@ -33,3 +33,22 @@ class FitResult(NamedTuple):
     train_acc: List[float]
     test_loss: List[float]
     test_acc: List[float]
+
+
+class Defaults:
+    # training
+    lr = 1e-3
+    num_workers = 4
+    batch_size = 32
+
+    # model
+    max_epochs = 20
+    # max_epochs = 2
+    hidden_size = 64
+    num_layers = 2
+
+    # Data specific
+    freq = 500
+    in_feature = 35
+    seq_len = 450
+    num_classes = 3
