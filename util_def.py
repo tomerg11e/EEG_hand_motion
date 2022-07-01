@@ -42,8 +42,8 @@ class Defaults:
     batch_size = 32
 
     # model
-    max_epochs = 20
-    # max_epochs = 2
+    max_epochs = 50
+    # max_epochs = 10
     hidden_size = 64
     num_layers = 2
 

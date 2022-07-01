@@ -196,12 +196,10 @@ class StaticGraphGNN(pl.LightningModule):
             (GCNConv(64, 32, node_dim=1), "x2d, edge_index, edge_weight -> x3"),
             (GCNConv(32, 16, node_dim=1), "x3, edge_index, edge_weight -> x4")])
 
-        self.model = Sequential("x, edge_index, edge_weight", [
-            (GCNConv(self.seq_len, 16, node_dim=1), "x, edge_index, edge_weight -> x1")])
+        # self.model = Sequential("x, edge_index, edge_weight", [
+        #     (GCNConv(self.seq_len, 16, node_dim=1), "x, edge_index, edge_weight -> x1")])
 
     def forward(self, x, batch_index):
-        # x_out = GCNConv(self.seq_len, 128, node_dim=1)(x, self.edge_index, self.edge_weight)
-        # x_out = GCNConv(128, 64, node_dim=1)(x_out, self.edge_index, self.edge_weight)
         x_out = self.model(x, self.edge_index, self.edge_weight)
         x_out = global_mean_pool(x_out.transpose(1, 0), None).transpose(1, 0)
         x_out = Linear(16, self.num_classes)(x_out).squeeze()
@@ -217,8 +215,8 @@ class StaticGraphGNN(pl.LightningModule):
         pred = x_out.argmax(-1)
         accuracy = (pred == y).sum() / pred.shape[0]
 
-        # self.log("loss/train", loss)
-        # self.log("acc/train", accuracy)
+        self.log("loss/train1", loss, on_epoch=True, on_step=False)
+        self.log("acc/train1", accuracy, on_epoch=True, on_step=False)
 
         return {"loss": loss, "accuracy": accuracy, "size": len(y)}
 
@@ -236,8 +234,8 @@ class StaticGraphGNN(pl.LightningModule):
         train_accuracy = num_correct / num_total
         train_loss = train_loss / num_total
 
-        self.log("acc/train", train_accuracy)
-        self.log("loss/train", train_loss)
+        # self.log("acc/train1", train_accuracy)
+        # self.log("loss/train1", train_loss)
 
     def validation_step(self, batch, batch_index):
         x = batch["x"]
@@ -246,6 +244,10 @@ class StaticGraphGNN(pl.LightningModule):
         x_out = self.forward(x, batch_index)
         loss = F.cross_entropy(x_out, y)
         pred = x_out.argmax(-1)
+
+        # self.log("loss/train", loss, on_epoch=True, prog_bar=True)
+        # self.log("acc/train", accuracy, on_epoch=True, prog_bar=True)
+
 
         return x_out, pred, y
 
