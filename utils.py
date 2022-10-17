@@ -16,7 +16,7 @@ def get_configuration(upload: bool = True) -> argparse.Namespace:
     parser.add_argument("--max_epochs", default=d.max_epochs, type=int)
     parser.add_argument("--train_test_ratio", default=(0.8, 0.1, 0.1), type=tuple)
 
-    parser.add_argument("--model_type", choices=["LSTM"], default="LSTM")
+    # parser.add_argument("--model_type", choices=["LSTM"], default="LSTM")
     parser.add_argument("--batch_size", default=d.batch_size, type=int)  # The batch size for the data loaders
     parser.add_argument("--num_workers", default=d.num_workers, type=int)  # The number of workers for the data loaders
     parser.add_argument("--hidden_size", default=d.hidden_size, type=int)

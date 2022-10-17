@@ -94,7 +94,7 @@ def main(arguments):
 
 
 def test():
-    data_path = "Data/data_part0.npy"
+    data_path = "Data/raw/data_part0.npy"
     low_band = 0.5
     high_band = 30
     data = np.load(data_path)

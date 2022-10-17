@@ -39,10 +39,10 @@ class Defaults:
     # training
     lr = 1e-3
     num_workers = 4
-    batch_size = 32
+    batch_size = 64
 
     # model
-    max_epochs = 50
+    max_epochs = 400
     # max_epochs = 10
     hidden_size = 64
     num_layers = 2
