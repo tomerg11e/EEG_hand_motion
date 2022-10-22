@@ -6,7 +6,7 @@ from torch.utils.data import Dataset
 import numpy as np
 import os
 from tqdm import tqdm
-from scipy.special import chebyt, legendre, chebyu
+
 import os.path as osp
 from util_def import Defaults as d
 import torch

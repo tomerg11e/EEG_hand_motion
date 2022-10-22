@@ -39,6 +39,34 @@ def get_data_geo(data_path: str, train_ration: tuple, arguments, upper_cap=None)
     dataset = EEGDataset.EEGDataset(data_path.split('raw')[0], data_transform=data_transforms)
     # dataset = EEGDenseDataset(None, FULL_DATA_PATH, transform=None, upper_cap=upper_cap, data_transform=data_transforms)
     train, val, test = torch.utils.data.random_split(dataset, [int(i * len(dataset)) for i in train_ration])
+    # data = np.load(data_path).astype('float64')
+    # data = data.reshape((data.shape[0], -1, data.shape[-1]))
+    # labels = np.load(data_path.replace(data_format, labels_format))
+    # adjacency_matrix, degree_matrix, laplacian = corr(data)
+    # train = []
+    # val = []
+    # test = []
+    # num_nodes = arguments.in_feature
+    # num_nodes = 35
+    # edges = np.stack(np.where(np.ones((num_nodes, num_nodes)) - np.eye(num_nodes) == 1))
+    # edges = np.stack(np.where(np.ones((num_nodes, num_nodes)) == 1))
+    # edges = torch.tensor(edges, dtype=torch.long)
+    # edge_attr = adjacency_matrix.reshape(-1, 1)
+    # sample_graph = None
+    # for sample, label in zip(data, labels):
+    #     r = np.random.rand(1)
+    #     sample_graph = Data(x=torch.tensor(sample), edge_index=edges, edge_attr=torch.tensor(edge_attr),
+    #                         y=label.reshape(1, 1), num_nodes=num_nodes)
+    #     if r < train_ration[0]:
+    #         train.append(sample_graph)
+    #     elif r < train_ration[1]:
+    #         train.append(sample_graph)
+    #     else:
+    #         test.append(sample_graph)
+    # train_loader = DataLoader(train, batch_size=arguments.batch_size, shuffle=True, num_workers=arguments.num_workers)
+    # val_loader = DataLoader(val, batch_size=arguments.batch_size, shuffle=False, num_workers=arguments.num_workers)
+    # test_loader = DataLoader(test, batch_size=arguments.batch_size, shuffle=False, num_workers=arguments.num_workers)
+
     train_loader = DataLoader(train, batch_size=arguments.batch_size, shuffle=True, num_workers=arguments.num_workers)
     val_loader = DataLoader(val, batch_size=arguments.batch_size, shuffle=False, num_workers=arguments.num_workers)
     test_loader = DataLoader(test, batch_size=arguments.batch_size, shuffle=False, num_workers=arguments.num_workers)
@@ -102,34 +130,34 @@ def train_lightning_model(model_name, model, train_loader, val_loader, test_load
     return model, result
 
 
-# def corr(data, plot: bool = False):
-#     samples, channels, seq_len = data.shape
-#
-#     # do corrcoef to all
-#     res_data = np.transpose(data, axes=[1, 2, 0]).reshape(35, -1)
-#     pcc = np.corrcoef(res_data)
-#
-#     pcc = pcc[:channels, :channels]
-#     appc = np.abs(pcc)
-#     adjacency_matrix = appc - np.eye(channels)
-#     degree_matrix = np.sum(adjacency_matrix, axis=0)
-#     laplacian = np.diag(degree_matrix) - adjacency_matrix
-#
-#     if plot:
-#         sns.heatmap(pcc)
-#         plt.title("PCC")
-#         plt.show()
-#         sns.heatmap(appc)
-#         plt.title("abs PCC matrix")
-#         plt.show()
-#         sns.heatmap(adjacency_matrix)
-#         plt.title("Adjacency matrix")
-#         plt.show()
-#         sns.heatmap(laplacian)
-#         plt.title("laplacian matrix")
-#         plt.show()
-#
-#     return adjacency_matrix, degree_matrix, laplacian
+def corr(data, plot: bool = False):
+    samples, channels, seq_len = data.shape
+
+    # do corrcoef to all
+    res_data = np.transpose(data, axes=[1, 2, 0]).reshape(35, -1)
+    pcc = np.corrcoef(res_data)
+
+    pcc = pcc[:channels, :channels]
+    appc = np.abs(pcc)
+    adjacency_matrix = appc - np.eye(channels)
+    degree_matrix = np.sum(adjacency_matrix, axis=0)
+    laplacian = np.diag(degree_matrix) - adjacency_matrix
+
+    if plot:
+        sns.heatmap(pcc)
+        plt.title("PCC")
+        plt.show()
+        sns.heatmap(appc)
+        plt.title("abs PCC matrix")
+        plt.show()
+        sns.heatmap(adjacency_matrix)
+        plt.title("Adjacency matrix")
+        plt.show()
+        sns.heatmap(laplacian)
+        plt.title("laplacian matrix")
+        plt.show()
+
+    return adjacency_matrix, degree_matrix, laplacian
 
 
 def train_one_epoch(epoch, model, train_loader, optimizer, loss_fn):
