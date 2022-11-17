@@ -9,6 +9,11 @@ from util_def import Defaults as d
 
 
 def get_configuration(upload: bool = True) -> argparse.Namespace:
+    """
+    get hyperparameter configuration for a run
+    :param upload: whether to upload the run to weight and biases
+    :return: namespace contacting the hyperparameters values
+    """
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--learning_rate", default=d.lr, type=float)
@@ -38,6 +43,15 @@ def get_configuration(upload: bool = True) -> argparse.Namespace:
 
 
 def upload_mean(epoch, train_result, test_result, verbose, wandb_upload):
+    """
+    a post_epoch_fn used for calculating and logging the mean results at the end of each epoch
+    :param epoch: epoch num
+    :param train_result:
+    :param test_result:
+    :param verbose:
+    :param wandb_upload:
+    :return:
+    """
     if wandb_upload:
         train_loss = sum(train_result.losses) / len(train_result.losses)
         test_loss = sum(test_result.losses) / len(test_result.losses)

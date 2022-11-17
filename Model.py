@@ -1,16 +1,12 @@
 import torch
-import numpy as np
 import torch.nn as nn
-from pytorch_lightning.utilities.types import EPOCH_OUTPUT, STEP_OUTPUT
 from torch.nn.functional import log_softmax, softmax
 import torch_geometric.nn as geom_nn
-from typing import Optional
-import torch_geometric.data as geom_data
 import torch.optim as optim
 import pytorch_lightning as pl
 import torch.nn.functional as F
 from torch.nn import Dropout, Linear, ReLU
-from torch_geometric.nn import GCNConv, Sequential, global_mean_pool, SAGPooling, max_pool
+from torch_geometric.nn import GCNConv, SAGPooling
 import math
 
 gnn_layer_by_name = {
@@ -18,6 +14,14 @@ gnn_layer_by_name = {
     "GAT": geom_nn.GATConv,
     "GraphConv": geom_nn.GraphConv
 }
+
+"""
+this file consist the finalized model for which I have run the task
+It consist three models
+    LstmModel - a starter pytorch model for running on the tabular data
+    GraphLevelGNN (GraphGNNModel, GNNModel) - a starter lighning model for running on the graphical data
+    StaticGraphGNN(GNNStep) - the finalized model
+"""
 
 
 class LstmModel(nn.Module):
@@ -103,6 +107,9 @@ class GNNModel(nn.Module):
 
 
 class GraphGNNModel(nn.Module):
+    """
+    a model consist of a GNN followed by a FC layer for graph classification
+    """
 
     def __init__(self, in_feature, hidden_size, num_classes, dp_rate_linear=0.5, **kwargs):
         """
@@ -137,6 +144,9 @@ class GraphGNNModel(nn.Module):
 
 
 class GraphLevelGNN(pl.LightningModule):
+    """
+    A lightning wrapper model for the GraphGNNModel class
+    """
 
     def __init__(self, **model_kwargs):
         super().__init__()
@@ -176,142 +186,6 @@ class GraphLevelGNN(pl.LightningModule):
     def test_step(self, batch, batch_idx):
         _, acc = self.forward(batch, mode="test")
         self.log('test_acc', acc)
-
-
-class DenseStaticGraphGNN(pl.LightningModule):
-
-    def __init__(self, dataset, **kwargs):
-        super(DenseStaticGraphGNN, self).__init__()
-        self.edge_index = dataset.edge_index
-        self.edge_weight = dataset.edge_weight.reshape(-1, 1).float()
-        self.in_feature = kwargs["in_feature"]
-        self.num_classes = kwargs["num_classes"]
-        self.save_hyperparameters()
-
-        # hidden layer node features
-        self.hidden = kwargs["hidden_size"]
-        self.seq_len = kwargs["seq_len"]
-        self.model = Sequential("x, edge_index, edge_weight", [
-            (GCNConv(self.seq_len, 128, node_dim=1), "x, edge_index, edge_weight -> x1"),
-            (GCNConv(128, 64, node_dim=1), "x1, edge_index, edge_weight -> x2"),
-            (ReLU(), "x2 -> x2a"), (Dropout(p=0.2), "x2a -> x2d"),
-            (GCNConv(64, 32, node_dim=1), "x2d, edge_index, edge_weight -> x3"),
-            (GCNConv(32, 16, node_dim=1), "x3, edge_index, edge_weight -> x4")])
-
-        # self.conv1 = GCNConv(self.seq_len, 128, node_dim=1)
-        # self.pool1 = SAGPooling(in_channels=128, node_dim=1)
-        # self.conv2 = GCNConv(128, 64, node_dim=1)
-        # self.pool2 = SAGPooling(in_channels=64)
-        # self.conv3 = GCNConv(64, 32, node_dim=1)
-        # self.pool3 = SAGPooling(in_channels=32)
-        # self.conv4 = GCNConv(32, 16, node_dim=1)
-
-        # self.model = Sequential("x, edge_index, edge_weight", [
-        #     (GCNConv(self.seq_len, 16, node_dim=1), "x, edge_index, edge_weight -> x1")])
-
-    def forward(self, x, batch_index):
-        # x_out = self.model(x, self.edge_index, self.edge_weight)
-        # x_out = global_mean_pool(x_out.transpose(1, 0), None).transpose(1, 0)
-        # x_out = Linear(16, self.num_classes)(x_out).squeeze()
-        # x_out = torch.softmax(x_out, dim=1)
-        x_out = self.conv1(x, self.edge_index, self.edge_weight)
-        x_out = self.pool1(x_out, self.edge_index, self.edge_weight)
-        return x_out
-
-    # c = torch.tensor([1,1,1,1,1,2,2,2,2,2,3,3,3,3,3,4,4,4,4,4,5,5,5,5,5,6,6,6,6,6,7,7,7,7,7])
-
-    def training_step(self, batch, batch_index):
-        x = batch["x"]
-        y = batch["y"]
-
-        x_out = self.forward(x, batch_index)
-        loss = F.cross_entropy(x_out, y)
-        pred = x_out.argmax(-1)
-        accuracy = (pred == y).sum() / pred.shape[0]
-
-        self.log("loss/train1", loss, on_epoch=True, on_step=False)
-        self.log("acc/train1", accuracy, on_epoch=True, on_step=False)
-
-        return {"loss": loss, "accuracy": accuracy, "size": len(y)}
-
-    def training_epoch_end(self, training_step_outputs):
-        train_loss = 0.0
-        num_correct = 0
-        num_total = 0
-
-        for output in training_step_outputs:
-            train_loss += output["loss"]
-
-            num_correct += output["accuracy"] * output["size"]
-            num_total += output["size"]
-
-        train_accuracy = num_correct / num_total
-        train_loss = train_loss / num_total
-
-        # self.log("acc/train1", train_accuracy)
-        # self.log("loss/train1", train_loss)
-
-    def validation_step(self, batch, batch_index):
-        x = batch["x"]
-        y = batch["y"]
-
-        x_out = self.forward(x, batch_index)
-        loss = F.cross_entropy(x_out, y)
-        pred = x_out.argmax(-1)
-
-        # self.log("loss/train", loss, on_epoch=True, prog_bar=True)
-        # self.log("acc/train", accuracy, on_epoch=True, prog_bar=True)
-
-        return x_out, pred, y
-
-    def validation_epoch_end(self, validation_step_outputs):
-        val_loss = 0.0
-        num_correct = 0
-        num_total = 0
-
-        for output, pred, labels in validation_step_outputs:
-            val_loss += F.cross_entropy(output, labels, reduction="sum")
-
-            num_correct += (pred == labels).sum()
-            num_total += pred.shape[0]
-
-        val_accuracy = num_correct / num_total
-        val_loss = val_loss / num_total
-
-        self.log("acc/val", val_accuracy)
-        self.log("loss/val", val_loss)
-
-    def test_step(self, batch, batch_index):
-        x = batch["x"]
-        y = batch["y"]
-
-        x_out = self.forward(x, batch_index)
-        loss = F.cross_entropy(x_out, y)
-        pred = x_out.argmax(-1)
-
-        return x_out, pred, y
-
-    def test_epoch_end(self, test_step_outputs):
-        test_loss = 0.0
-        num_correct = 0
-        num_total = 0
-
-        for output, pred, labels in test_step_outputs:
-            test_loss += F.cross_entropy(output, labels, reduction="sum")
-
-            num_correct += (pred == labels).sum()
-            num_total += pred.shape[0]
-
-        test_accuracy = num_correct / num_total
-        test_loss = test_loss / num_total
-
-        self.log("acc/test", test_accuracy)
-        self.log("loss/test", test_loss)
-
-        return {'test_loss': test_loss, 'test_acc': test_accuracy}
-
-    def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=3e-4)
 
 
 class GNNStep(nn.Module):

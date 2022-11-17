@@ -4,9 +4,12 @@ import sys
 import torch
 import torch.nn as nn
 import tqdm.auto
-from typing import Any, Callable, Optional, Iterator
+from typing import Any, Callable, Optional
 from torch.utils.data import DataLoader
 from util_def import FitResult, BatchResult, EpochResult
+
+"""
+a training framework for pytorch models. not used in the final graphical model"""
 
 
 class Trainer(abc.ABC):

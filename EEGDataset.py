@@ -1,13 +1,6 @@
-import pandas as pd
-import torch
-import torch_geometric
 from torch_geometric.data import Dataset as geo_Dataset, Data
 from torch.utils.data import Dataset
 import numpy as np
-import os
-from tqdm import tqdm
-from scipy.special import chebyt, legendre, chebyu
-import os.path as osp
 from util_def import Defaults as d
 import torch
 import scipy.signal as signal
@@ -15,8 +8,14 @@ import scipy.signal as signal
 data_format = "data_part"
 labels_format = "labels_part"
 
+"""
+A file responsible for creating the graphical datasets from the .npy files"""
+
 
 class EEGDataset(geo_Dataset):
+    """
+    the first iteration for graphical representation of the data using geo_Dataset
+    """
 
     def __init__(self, root, transform=None, pre_transform=None, pre_filter=None, data_transform=None):
         self.edge_index = None
@@ -68,7 +67,12 @@ class EEGDataset(geo_Dataset):
 
 
 class EEGDenseDataset(Dataset):
+    """
+    the final iteration for graphical representation of the data using geo_Dataset
+    """
+
     def __init__(self, csv_file, root_dir, transform=None, upper_cap=None, data_transform=None):
+        # load data
         data = np.load(root_dir)
         data = data.reshape((data.shape[0], -1, data.shape[-1]))
         data = data[:upper_cap]
@@ -78,6 +82,7 @@ class EEGDenseDataset(Dataset):
         if self.data_transform:
             data = self.data_transform(data)
 
+        # create graph
         self.length, self.num_nodes, self.seq_len = data.shape
         self.labels = torch.tensor(np.load(root_dir.replace(data_format, labels_format))).long()[:self.length]
         adjacency_matrix, degree_matrix, laplacian = corr(data)
@@ -96,15 +101,15 @@ class EEGDenseDataset(Dataset):
         return self.length
 
 
-class SampleButterFilter:
-    def __init__(self, low_band: float = 0.5, high_band: float = 30, N: int = 5):
-        assert low_band < high_band
-        self.b, self.a, *_ = signal.butter(N, [low_band, high_band], fs=d.freq, btype='band')
-
-    def __call__(self, sample):
-        x = signal.lfilter(self.b, self.a, sample['x'], axis=1)
-
-        return {'x': x, 'y': sample['y']}
+# class SampleButterFilter:
+#     def __init__(self, low_band: float = 0.5, high_band: float = 30, N: int = 5):
+#         assert low_band < high_band
+#         self.b, self.a, *_ = signal.butter(N, [low_band, high_band], fs=d.freq, btype='band')
+#
+#     def __call__(self, sample):
+#         x = signal.lfilter(self.b, self.a, sample['x'], axis=1)
+#
+#         return {'x': x, 'y': sample['y']}
 
 
 def butter_filter(data, low_band: float = 0.5, high_band: float = 30, N: int = 5):
@@ -113,6 +118,11 @@ def butter_filter(data, low_band: float = 0.5, high_band: float = 30, N: int = 5
 
 
 def corr(data: np.ndarray):
+    """
+    calculate the cross correlation matrix of the givan data
+    :param data:
+    :return: adjacency_matrix, degree_matrix and laplacian of the given data
+    """
     samples, channels, seq_len = data.shape
 
     res_data = np.transpose(data, axes=[1, 2, 0]).reshape(35, -1)
